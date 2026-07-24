@@ -7,23 +7,23 @@ print("     GROWTOPIA AUTO FARM & BUY PREMIUM        ")
 print("==============================================")
 
 local function check_key()
-    -- GrowPai internet çekme fonksiyonu kontrolü
-    if not HttpRequest then
+    -- GrowPai http tablosu kontrolü
+    if not http or not http.get then
         print("[HATA] Bu script sadece GrowPai executor icinde calisabilir.")
         return false
     end
     
     local success, response = pcall(function()
-        return HttpRequest({Url = GITHUB_KEY_LINK})
+        return http.get(GITHUB_KEY_LINK)
     end)
     
-    if not success or not response or not response.Body then
+    if not success or not response then
         print("[HATA] Internet baglantisi kuruladı veya key listesi cekilemedi!")
         return false
     end
     
     -- Satır satır keyleri kontrol etme
-    for key in string.gmatch(response.Body, "[^\r\n]+") do
+    for key in string.gmatch(response, "[^\r\n]+") do
         if _G.ScriptKey == key then
             return true
         end
