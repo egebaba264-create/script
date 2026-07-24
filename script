@@ -1,5 +1,4 @@
 -- ==================== AYARLAR ====================
--- GitHub'dan aldığınız keys.txt dosyasının RAW linkini aşağıdaki tırnakların içine yapıştırın:
 local GITHUB_KEY_LINK = "https://githubusercontent.com"
 -- =================================================
 
@@ -7,24 +6,24 @@ print("==============================================")
 print("     GROWTOPIA AUTO FARM & BUY PREMIUM        ")
 print("==============================================")
 
--- İnternetten key listesini kontrol etme fonksiyonu
 local function check_key()
-    if not game or not game.HttpGet then
+    -- GrowPai internet çekme fonksiyonu kontrolü
+    if not HttpRequest then
         print("[HATA] Bu script sadece GrowPai executor icinde calisabilir.")
         return false
     end
     
-    local success, result = pcall(function()
-        return game:HttpGet(GITHUB_KEY_LINK)
+    local success, response = pcall(function()
+        return HttpRequest({Url = GITHUB_KEY_LINK})
     end)
     
-    if not success or not result then
-        print("[HATA] Internet baglantisi kurulamadı!")
+    if not success or not response or not response.Body then
+        print("[HATA] Internet baglantisi kuruladı veya key listesi cekilemedi!")
         return false
     end
     
     -- Satır satır keyleri kontrol etme
-    for key in string.gmatch(result, "[^\r\n]+") do
+    for key in string.gmatch(response.Body, "[^\r\n]+") do
         if _G.ScriptKey == key then
             return true
         end
@@ -36,7 +35,7 @@ if check_key() then
     print("[+] LISANS ONAYLANDI! Script yukleniyor...")
     print("==============================================\n")
     
-    -- Sizin gönderdiğiniz Growtopia Lua otomasyon kodunuz:
+    -- Growtopia Lua otomasyon kodunuz:
     GEM_LIMIT, TAKAS_WORLD, FARM_WORLD, TAKAS_MIKTAR, NPC_NETID, current_gems = 1000000000, "gtpr", "bfgs", 40, -31, 0
     ITEM_ID, SHOP_ITEM_NAME, BUY_MS = 7784, "demon", 600
 
