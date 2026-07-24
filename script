@@ -1,0 +1,112 @@
+-- ==================== AYARLAR ====================
+-- GitHub'dan aldığınız keys.txt dosyasının RAW linkini aşağıdaki tırnakların içine yapıştırın:
+local GITHUB_KEY_LINK = "https://githubusercontent.com"
+-- =================================================
+
+print("==============================================")
+print("     GROWTOPIA AUTO FARM & BUY PREMIUM        ")
+print("==============================================")
+
+-- İnternetten key listesini kontrol etme fonksiyonu
+local function check_key()
+    if not game or not game.HttpGet then
+        print("[HATA] Bu script sadece GrowPai executor icinde calisabilir.")
+        return false
+    end
+    
+    local success, result = pcall(function()
+        return game:HttpGet(GITHUB_KEY_LINK)
+    end)
+    
+    if not success or not result then
+        print("[HATA] Internet baglantisi kurulamadı!")
+        return false
+    end
+    
+    -- Satır satır keyleri kontrol etme
+    for key in string.gmatch(result, "[^\r\n]+") do
+        if _G.ScriptKey == key then
+            return true
+        end
+    end
+    return false
+end
+
+if check_key() then
+    print("[+] LISANS ONAYLANDI! Script yukleniyor...")
+    print("==============================================\n")
+    
+    -- Sizin gönderdiğiniz Growtopia Lua otomasyon kodunuz:
+    GEM_LIMIT, TAKAS_WORLD, FARM_WORLD, TAKAS_MIKTAR, NPC_NETID, current_gems = 1000000000, "gtpr", "bfgs", 40, -31, 0
+    ITEM_ID, SHOP_ITEM_NAME, BUY_MS = 7784, "demon", 600
+
+    function send_pkt(t, txt) if SendPacket then SendPacket(t, txt) end end
+    function sl(ms) if Sleep then Sleep(ms) end end
+    function lg(txt) if log then log("[SUPER] " .. txt) end end
+    function gc() if collectgarbage then collectgarbage("collect") end end
+
+    function getCount(id)
+        local inv = {}
+        if GetInventory then inv = GetInventory() elseif getInventory then inv = getInventory() end
+        if not inv then return 0 end
+        for _, item in pairs(inv) do
+            if (item.id or item.itemID or 0) == id then return item.count or item.amount or 0 end
+        end
+        return 0
+    end
+
+    function read_gems()
+        if GetLocal and GetLocal() then
+            local p = GetLocal()
+            current_gems = p.gems or p.bux or p.gem or 0
+        end
+    end
+
+    function stop_farm() send_pkt(2, "action|input\n|text|/farm") sl(500) end
+    function start_farm() send_pkt(2, "action|input\n|text|/farm") sl(500) end
+    function setup_autofarm()
+        lg("Autofarm blogu (7784 Demon Block) ayarlaniyor...")
+        send_pkt(2, "action|dialog_return\ndialog_name|autofarm\nblock|" .. ITEM_ID)
+        sl(1000)
+    end
+
+    function buy_block()
+        lg("Demon Block (7784) marketten satin aliniyor...")
+        stop_farm() sl(1000)
+        send_pkt(2, "action|buy\nitem|" .. SHOP_ITEM_NAME)
+        send_pkt(2, "action|buy\nitem|" .. SHOP_ITEM_NAME .. "\n") sl(500)
+        send_pkt(2, "action|store\n") sl(BUY_MS)
+        send_pkt(2, "action|buy\nitem|" .. SHOP_ITEM_NAME)
+        send_pkt(2, "action|buy\nitem|" .. SHOP_ITEM_NAME .. "\n") sl(BUY_MS)
+        send_pkt(2, "action|killstore\n") sl(1500)
+        start_farm() sl(1500) gc()
+    end
+
+    function go_world(name)
+        lg("Gidiliyor: " .. name) send_pkt(3, "action|quit_to_exit") sl(4000)
+        send_pkt(3, "action|join_request\nname|" .. name .. "\ninvitedWorld|0") sl(6000)
+    end
+
+    function takas()
+        lg("=== TAKAS BASLIYOR ===")
+        stop_farm() sl(1500) go_world(TAKAS_WORLD) sl(3000)
+        send_pkt(2, "action|wrench\n|netid|" .. NPC_NETID) sl(3000)
+        send_pkt(2, "action|dialog_return\ndialog_name|dealer\nbuttonClicked|bgl_gems") sl(3000)
+        send_pkt(2, "action|dialog_return\ndialog_name|dealer_accept\nbuttonClicked|bgl_gems\n\namount|" .. TAKAS_MIKTAR) sl(4000)
+        go_world(FARM_WORLD) sl(5000) setup_autofarm() start_farm() sl(2000) gc()
+    end
+
+    lg("=== AUTO FARM & AUTO BUY BOT AKTIF ===")
+    gem_check_tick = 240 gc_tick = 0 sl(2000) setup_autofarm()
+    if getCount(ITEM_ID) <= 0 then buy_block() else start_farm() end
+
+    while true do
+        gem_check_tick = gem_check_tick + 1 gc_tick = gc_tick + 1
+        if gem_check_tick >= 240 then gem_check_tick = 0 read_gems() lg("Gems: " .. current_gems .. " / " .. GEM_LIMIT) end
+        if gc_tick >= 1200 then gc_tick = 0 gc() end
+        if current_gems >= GEM_LIMIT then lg("LIMIT ASILDI: " .. current_gems) takas() current_gems = 0 gem_check_tick = 0 end
+        if getCount(ITEM_ID) <= 0 then buy_block() else sl(250) end
+    end
+else
+    print("[-] GECERSIZ VEYA SURESI DOLMUS KEY! Giris Engellendi.")
+end
